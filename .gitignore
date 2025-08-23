@@ -1,0 +1,11 @@
+# Python virtual environment
+venv/
+__pycache__/
+
+# OS-specific files
+.DS_Store
+
+#not required
+process_data.py
+# Ignore the original large data file
+data/okcupid_final_with_named_personas.csv
