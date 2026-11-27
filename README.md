@@ -1,69 +1,85 @@
-# PersonaMatch: An Exploration in AI-Powered Recommendation Systems
+# PersonaMatch
 
-This project was a hands-on exercise to build and understand an end-to-end machine learning application.  
-The goal was to create a **dating recommendation system** that uses **Natural Language Processing (NLP)** to match users based on personality, moving beyond simple filters.
+A personality-aware recommendation demo. A user writes a short profile; the app ranks
+~56,000 dating-profile records by a hybrid score that combines semantic similarity of
+their free-text essays with lifestyle and age similarity, then re-ranks live from
+like/dislike feedback. Built with Streamlit and Sentence-Transformers.
 
----
+> **Demo only.** The records come from a public research dataset of real OkCupid profiles
+> (see [Data and ethics](#data-and-ethics)). Do not use this to profile real people.
 
-## 💡 Key Concepts Explored
-- **Natural Language Processing (NLP):** Used a Sentence-Transformer model to convert unstructured user essays into meaningful vector embeddings for comparison.  
-- **Hybrid Recommendation Engine:** Combined cosine similarity (personality) with Jaccard similarity (lifestyle attributes) for a balanced compatibility score.  
-- **Interactive Web Development:** Built a functional UI with Streamlit, including a real-time feedback loop where swipes adjust future recommendations.  
-- **DevOps & Version Control:** Managed large datasets with Git LFS and solved deployment issues for reproducibility.  
+## How it works
 
----
+```mermaid
+flowchart LR
+    U[User profile + essay] --> E[all-MiniLM-L6-v2<br/>essay embedding]
+    E --> S1[Cosine similarity<br/>vs precomputed essay embeddings]
+    U --> S2[Jaccard similarity<br/>on one-hot lifestyle features]
+    U --> S3[Age proximity<br/>exp -0.1 x age gap]
+    S1 --> F[Weighted score<br/>0.5 / 0.3 / 0.2]
+    S2 --> F
+    S3 --> F
+    F --> R[Top 200 candidates]
+    R --> L[Swipe feedback re-ranking<br/>+0.15 liked persona / -0.20 disliked]
+```
 
-## ⚙️ Project Workflow & Technical Decisions
-1. **Data Cleaning & Optimization**
-   - Started with a **108 MB OkCupid dataset**, reduced to **5 MB** by keeping only essential columns.  
-   - Cleaned structured features (age, diet, smoking, drinking, income, etc.).  
-   - Encoded categorical variables and handled missing values (e.g., `"Unknown"` instead of dropping).  
+| Component | Weight | Computed from |
+| --- | ---: | --- |
+| Personality | 50% | Cosine similarity of `all-MiniLM-L6-v2` embeddings of the essays |
+| Lifestyle | 30% | Jaccard similarity over body type, diet, drinking, drugs, smoking, sign and religion seriousness |
+| Demographics | 20% | `exp(-0.1 * |age difference|)` |
 
-2. **Text Preprocessing**
-   - Tokenized and cleaned user essays (essay0–essay9).  
-   - Removed stopwords and normalized text for better embeddings.  
+For straight users, candidates are first filtered to the opposite sex and compatible orientation; other users see all records. Each record also carries a coarse
+"persona" label used by the feedback loop: a like adds 0.15 to every candidate with a liked
+persona, a dislike subtracts 0.20.
 
-3. **Personality Encoding**
-   - Used **`all-MiniLM-L6-v2`** Sentence-Transformer for essay embeddings.  
-   - Balanced performance and size, capturing semantic meaning efficiently.  
+The weights are hand-chosen, not tuned, and there is no offline evaluation of match quality.
 
-4. **Scoring Algorithm**
-   - Weighted compatibility function:  
-     - 50% Personality (cosine similarity of embeddings)  
-     - 30% Lifestyle (Jaccard similarity)  
-     - 20% Demographics (age, location, etc.)  
+## Run it
 
-5. **Recommendation & Feedback**
-   - Hybrid recommender generates matches.  
-   - Implemented **user swipe feedback loop** in Streamlit to adjust recommendations in real time.  
+Requires Python 3.10+ and [Git LFS](https://git-lfs.com) (the precomputed embeddings,
+87 MB, are stored with LFS).
 
-6. **Exploratory Analysis & Clustering (Extra Work)**
-   - Experimented with **KMeans clustering** on embeddings to group users by latent personality traits.  
-   - Compared cluster quality with inertia and silhouette scores.  
-   - Helped validate personality-driven groupings before finalizing similarity-based matching.  
+```bash
+git lfs install
+git clone https://github.com/sachin2967/PersonaMatch.git
+cd PersonaMatch
+python -m venv .venv && source .venv/bin/activate   # Windows: .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+streamlit run app.py
+```
 
----
+The first run downloads the `all-MiniLM-L6-v2` model from Hugging Face.
 
-## ✅ What I Learned
-- Practical use of **NLP embeddings** for semantic similarity tasks.  
-- Building a structured **end-to-end ML workflow** (data cleaning → modeling → deployment).  
-- Developing a **live ML-powered web app** with Streamlit + Flask backend.  
-- Handling large datasets with **Git LFS**, version control best practices, and debugging deployment issues.  
-- How clustering and similarity-based approaches differ in recommendation systems.  
+## Repository layout
 
----
+| Path | Contents |
+| --- | --- |
+| `app.py` | Streamlit app: scoring, re-ranking, UI |
+| `data/okcupid_cleaned.csv` | 56,780 cleaned profile records (demographic and lifestyle columns, persona label; no essay text) |
+| `data/okcupid_essay_embeddings_v2.npy` | Precomputed essay embeddings (Git LFS) |
+| `images/` | 855 decorative placeholder avatars (see below) |
 
-## 🛠️ Technology & Libraries Used
-- **Backend:** Python, Flask  
-- **Data Science:** Pandas, NumPy, Scikit-learn  
-- **NLP:** Sentence-Transformers (Hugging Face)  
-- **Web Framework:** Streamlit  
-- **Version Control:** Git, GitHub, Git LFS  
+## Data and ethics
 
----
+- **Profiles:** derived from the public OkCupid profile dataset released for research in
+  2015, which was scraped without the users' consent and has been the subject of an ethics
+  debate. This repo ships only cleaned categorical fields and embeddings, not the raw
+  essays, names or usernames. Treat it accordingly and do not try to re-identify anyone.
+- **Avatars:** the images in `images/` are generic 400x400 face images in Roboflow's export
+  format. They are assigned to results by row index purely for visual effect and do **not**
+  depict the people in the dataset. The upstream image dataset and its license are not
+  recorded here; see `images/ATTRIBUTION.md` before reusing them.
+- The persona labels (e.g. "The Eclectic Creative") are heuristic groupings, not validated
+  psychological categories.
 
-## 📌 Future Improvements
-- Integrate **deep learning–based ranking models** (e.g., fine-tuned BERT).  
-- Add **A/B testing** for scoring weights to optimize compatibility formula.  
-- Expand to **real-time database (PostgreSQL/SQLite)** instead of static CSV.  
-- Deploy with **Docker + CI/CD pipeline** for scalable production use.  
+## Limitations
+
+- The compatibility score is unvalidated: no ground-truth matches, no A/B test.
+- The data is a 2012-era snapshot of one dating site's users and is demographically skewed.
+- Feedback re-ranking works at the persona level, so it is crude.
+- State lives in the Streamlit session; nothing is stored between visits.
+
+## License
+
+MIT for the code. The dataset and the images keep their original terms.
