@@ -8,6 +8,10 @@ like/dislike feedback. Built with Streamlit and Sentence-Transformers.
 > **Demo only.** The records come from a public research dataset of real OkCupid profiles
 > (see [Data and ethics](#data-and-ethics)). Do not use this to profile real people.
 
+![PersonaMatch form showing the built-in example profile](docs/images/profile-form.png)
+
+*Local Streamlit profile form with its built-in example. The form has not been submitted.*
+
 ## How it works
 
 ```mermaid
