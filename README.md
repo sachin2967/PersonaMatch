@@ -5,6 +5,8 @@ A personality-aware recommendation demo. A user writes a short profile; the app 
 their free-text essays with lifestyle and age similarity, then re-ranks live from
 like/dislike feedback. Built with Streamlit and Sentence-Transformers.
 
+**Hosted demo:** https://personamatch.streamlit.app/
+
 > **Demo only.** The records come from a public research dataset of real OkCupid profiles
 > (see [Data and ethics](#data-and-ethics)). Do not use this to profile real people.
 
